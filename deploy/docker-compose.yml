@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: kernelshield-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kernelshield
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ../server/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
+
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: kernelshield-server
+    environment:
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: kernelshield
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    depends_on:
+      - timescaledb
+
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+    container_name: kernelshield-web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_SERVER_URL: http://localhost:8080
+    depends_on:
+      - server
+
+volumes:
+  timescale_data:

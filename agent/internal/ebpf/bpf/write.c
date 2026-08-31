@@ -1,0 +1,35 @@
+// eBPF C program for tracking file write operations (sys_enter_write)
+// +build ignore
+
+#include "headers/vmlinux.h"
+
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1024 * 256);
+} write_events SEC(".maps");
+
+SEC("tracepoint/syscalls/sys_enter_write")
+int tracepoint_sys_enter_write(void *ctx) {
+    struct file_write_event *event;
+    
+    event = bpf_ringbuf_reserve(&write_events, sizeof(struct file_write_event), 0);
+    if (!event) {
+        return 0;
+    }
+
+    __u64 pid_tgid = bpf_get_current_pid_tgid();
+    event->pid = (u32)(pid_tgid >> 32);
+    event->uid = (u32)bpf_get_current_uid_gid();
+    event->timestamp_ns = bpf_ktime_get_ns();
+    
+    bpf_get_current_comm(&event->comm, sizeof(event->comm));
+    
+    // Read count argument (bytes written)
+    const char *ctx_bytes = (const char *)ctx;
+    event->bytes_written = *((const __u64 *)(ctx_bytes + 24));
+
+    bpf_ringbuf_submit(event, 0);
+    return 0;
+}
+
+char _license[] SEC("license") = "GPL";

@@ -1,0 +1,9 @@
+rules:
+  - path: "/home/*/finance"
+    weight: 10.0
+  - path: "/var/www"
+    weight: 7.0
+  - path: "/etc"
+    weight: 9.0
+  - path: "/tmp"
+    weight: 1.0

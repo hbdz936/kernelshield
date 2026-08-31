@@ -2,7 +2,11 @@
 
 **Proactive Linux Ransomware Defense Platform**
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-000000?style=for-the-badge&logo=vercel)](https://web-theta-eight-18.vercel.app/)
+
 KernelShield is an eBPF-based, signal-correlated security platform designed to detect and stop Linux ransomware in real time before file encryption occurs.
+
+**Live Deployment (SOC Console)**: [https://web-theta-eight-18.vercel.app/](https://web-theta-eight-18.vercel.app/)
 
 ---
 
@@ -47,7 +51,7 @@ KernelShield bridges these gaps through a multi-sensor, kernel-level defense arc
 
 - **Agent (Endpoint Monitoring)**: Built in Go 1.21+ using `cilium/ebpf` and `clang` compiled eBPF C probes (`openat.c`, `write.c`, `execve.c`, `connect.c`). Features a high-fidelity simulation mode for cross-platform development.
 - **Server (Management Service)**: Built in Go 1.21+ with Gin REST API v1, gRPC telemetry ingestion, PostgreSQL / TimescaleDB storage, and Server-Sent Events (SSE) live alert engine.
-- **Web UI (SOC Console)**: Built with Next.js 14 (App Router), TypeScript, Tailwind CSS, and Recharts.
+- **Web UI (SOC Console)**: Built with Next.js 14 (App Router), TypeScript, Tailwind CSS, and Recharts. Live demo hosted at [https://web-theta-eight-18.vercel.app/](https://web-theta-eight-18.vercel.app/).
 
 ---
 
@@ -91,4 +95,4 @@ make run-agent
 ```bash
 make run-web
 ```
-Open `http://localhost:3000` in your browser to access the KernelShield SOC Console.
+Open `http://localhost:3000` locally or access the live deployment at [https://web-theta-eight-18.vercel.app/](https://web-theta-eight-18.vercel.app/).

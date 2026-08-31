@@ -2,30 +2,52 @@
 
 **Proactive Linux Ransomware Defense Platform**
 
-KernelShield is a signal-correlated, context-aware, eBPF-based security platform designed to detect and neutralize Linux ransomware threats before file encryption occurs.
+KernelShield is an eBPF-based, signal-correlated security platform designed to detect and stop Linux ransomware in real time before file encryption occurs.
 
 ---
 
-## Overview
+## The Problem
 
-KernelShield combines low-level Linux kernel monitoring (via eBPF) with multi-sensor threat correlation to stop unauthorized file modification and ransomware behaviors in real time. It consists of an agent running on monitored endpoints, a central management server, and a web dashboard for security monitoring.
+Linux servers host the core infrastructure of modern organizations, including databases, container hosts, and cloud storage. Ransomware targeting Linux systems operates at high speed, encrypting thousands of files per minute. 
+
+By the time traditional security tools detect file modifications or alert security teams, critical business data is already compromised, resulting in costly downtime and data loss.
+
+---
+
+## The Gap
+
+Existing Linux ransomware detection methods suffer from three main drawbacks:
+
+1. **User-Space Latency**: Standard file-system monitors (like `inotify`) operate in user space. This introduces inspection delays, allowing rapid ransomware payloads to complete encryption before intervention.
+2. **Static Honeypot Traps**: Traditional static honeypots are easily identified, ignored, or bypassed by modern ransomware binaries that scan file structures.
+3. **High False Positive Rates**: Generic file activity monitors often flag legitimate high-volume operations (such as automated backups, batch processing, or database indexing) because they treat all directories equally.
+
+---
+
+## Our Solution
+
+KernelShield bridges these gaps through a multi-sensor, kernel-level defense architecture:
+
+- **Kernel-Level Speed via eBPF**: By attaching probes directly to kernel syscalls (`openat`, `write`, `execve`, `connect`), KernelShield inspects and evaluates process actions with zero-copy speed before changes persist to disk.
+- **Dynamic Decoy Engine**: Automatically generates realistic, semantically matched honeypot trap files (such as `.docx`, `.xlsx`, `.pdf`) inside monitored paths. Any unauthorized process touching a decoy file triggers an immediate `SIGKILL` and network isolation.
+- **Business Criticality Weighting**: Incorporates configurable directory weighting rules (e.g., higher priority for production databases and finance folders) into threat scoring to eliminate false positives on non-critical paths.
+- **Multi-Sensor Threat Correlation**: Aggregates signals across file activity, process execution, network connections, and I/O rates within a sliding window per PID to calculate real-time threat scores.
 
 ---
 
 ## Key Features
 
-- **Dynamic Decoy Traps**: Generates realistic honeypot files (`.docx`, `.xlsx`, `.pdf`) in monitored directory paths. Any unauthorized process interacting with these decoy files is immediately neutralized via `SIGKILL` and network isolation.
-- **Business Criticality Weighting**: Evaluates threat severity based on path criticality configuration (e.g., higher priority for production data vs. temporary directories) to minimize false positives.
-- **Multi-Sensor Signal Correlation**: Collects events across file access, process execution, network activity, and I/O rates. Threat scoring correlates these signals within a sliding window per process (PID).
-- **Real-Time SOC Console**: Next.js dashboard providing live alerts, process timelines, endpoint status, and response modes.
+- **Instant Zero-Trust Response**: Terminates malicious processes (`syscall.SIGKILL`) and isolates network links within milliseconds.
+- **Context-Aware Decoys**: Dynamically generates realistic decoy files that mimic actual business documents.
+- **Real-Time SOC Dashboard**: Provides live telemetry, process timelines, threat alert management, and response policy controls.
 
 ---
 
 ## Tech Stack & Architecture
 
-- **Agent (Endpoint Monitoring)**: Go 1.21+, `cilium/ebpf`, `clang` compiled eBPF C programs (`openat.c`, `write.c`, `execve.c`, `connect.c`). Includes simulation mode for non-Linux/development environments.
-- **Server (Central Management)**: Go 1.21+, Gin REST API v1, gRPC telemetry ingestion, PostgreSQL / TimescaleDB, Server-Sent Events (SSE) live alert stream.
-- **Web UI (Security Dashboard)**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts.
+- **Agent (Endpoint Monitoring)**: Built in Go 1.21+ using `cilium/ebpf` and `clang` compiled eBPF C probes (`openat.c`, `write.c`, `execve.c`, `connect.c`). Features a high-fidelity simulation mode for cross-platform development.
+- **Server (Management Service)**: Built in Go 1.21+ with Gin REST API v1, gRPC telemetry ingestion, PostgreSQL / TimescaleDB storage, and Server-Sent Events (SSE) live alert engine.
+- **Web UI (SOC Console)**: Built with Next.js 14 (App Router), TypeScript, Tailwind CSS, and Recharts.
 
 ---
 
@@ -33,10 +55,10 @@ KernelShield combines low-level Linux kernel monitoring (via eBPF) with multi-se
 
 ```
 kernelshield/
-├── agent/             # Go agent & eBPF C probes (sensors, correlator, decoys)
-├── server/            # Go management server (REST API, gRPC ingestion, DB)
+├── agent/             # Endpoint monitoring agent, eBPF probes, sensors, & decoy engine
+├── server/            # Central management server, gRPC ingestion, REST API, & DB schema
 ├── web/               # Next.js 14 SOC dashboard
-├── deploy/            # Docker Compose setup
+├── deploy/            # Docker Compose deployment setup
 ├── Makefile           # Unified build & run automation
 └── README.md          # Project documentation
 ```
@@ -60,7 +82,7 @@ make build
 make run-server
 ```
 
-### 3. Start Agent
+### 3. Start Endpoint Agent
 ```bash
 make run-agent
 ```
@@ -69,4 +91,4 @@ make run-agent
 ```bash
 make run-web
 ```
-Open `http://localhost:3000` in your browser to access the security management console.
+Open `http://localhost:3000` in your browser to access the KernelShield SOC Console.
